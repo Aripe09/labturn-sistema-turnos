@@ -158,7 +158,7 @@ vercel
 
 Importante: Vercel solo alojara el frontend Angular. El backend Flask debe ejecutarse como servicio Python aparte para que la API REST exista. Este proyecto no usa Render por restriccion, y tampoco afirma persistencia en memoria dentro de funciones serverless. Para la demostracion completa, ejecutar Flask localmente en un unico proceso.
 
-Si el frontend publicado necesita consumir un backend remoto, configurar `apiUrl` en `frontend/src/environments/environment.ts` con la URL publica real de la API antes del build.
+En produccion Angular usa `/api` como URL base. Para publicar el sistema completo en internet se requiere un backend publico con estado compartido real. Ver `DEPLOYMENT.md` antes de publicar, porque Flask con memoria RAM en Vercel Functions no garantiza sincronizacion entre usuarios.
 
 ## Limitaciones tecnicas
 

@@ -1,63 +1,27 @@
-# Publicacion de LabTurn en Internet
+# Publicacion de LabTurn en Vercel
 
 ## Arquitectura
 
-LabTurn se publica en dos servicios:
+LabTurn se publica unicamente en Vercel:
 
-- Frontend Angular en Vercel.
-- Backend Flask en Render como Web Service.
+- Angular se compila como frontend estatico.
+- Flask se expone como Vercel Function desde `api/index.py`.
+- Angular llama al backend con rutas relativas `/api/...`.
 
-El backend guarda los turnos en listas, diccionarios y variables en memoria RAM. No usa Redis, Upstash, KV, PostgreSQL, MySQL, SQLite ni ningun almacenamiento externo.
+No usa Redis, Upstash, Render, Firebase, Supabase, bases de datos ni almacenamiento externo.
 
-## Por que Flask no va en Vercel
+## Modo demo con memoria temporal
 
-Vercel ejecuta funciones serverless. Esa arquitectura no garantiza que dos solicitudes usen el mismo proceso ni la misma memoria. Por eso no es correcto guardar la cola de turnos en variables globales dentro de Vercel Functions.
+El backend guarda los turnos en listas, diccionarios y variables en memoria RAM del proceso Flask. Esto permite que la practica funcione desde el enlace publico de Vercel sin ejecutar servidores en la computadora local.
 
-Render ejecuta Flask como un proceso web normal. Mientras el proceso este activo, las solicitudes comparten la misma memoria y las cuatro ventanillas ven el mismo estado.
-
-## Limitaciones aceptadas
-
-- Si Render reinicia el servicio, la cola se borra y el siguiente turno vuelve a `A001`.
-- En el plan gratuito, Render puede dormir el servicio tras inactividad.
-- El primer acceso despues de dormir puede tardar mas.
-- Debe usarse un solo worker de Gunicorn para mantener una sola memoria compartida.
-
-## Backend en Render
-
-El archivo `render.yaml` define:
-
-```bash
-gunicorn --workers 1 --threads 8 --timeout 60 --bind 0.0.0.0:$PORT backend.app:app
-```
-
-`--workers 1` es importante. Si se usan varios workers, cada worker tendria su propia memoria y podrian aparecer estados diferentes.
-
-Variable recomendada en Render:
-
-- `ALLOWED_ORIGINS`: URL publica de Vercel, por ejemplo `https://tu-app.vercel.app`.
-
-Si no se configura, Flask permite CORS desde cualquier origen para facilitar la practica escolar.
-
-## Frontend en Vercel
-
-Angular obtiene la URL del backend desde la variable de entorno:
-
-- `LABTURN_API_URL`
-
-Cuando tengas la URL real de Render, configúrala en Vercel con este formato:
-
-```text
-https://TU-SERVICIO.onrender.com/api
-```
-
-No inventes esta URL: debe ser la URL real que Render te muestre al crear el Web Service.
+Limitacion importante: Vercel Functions no garantizan una unica instancia persistente para todas las solicitudes. Por eso, esta version es una demo temporal y no debe presentarse como sincronizacion garantizada entre multiples instancias. Si Vercel recicla o escala la Function, el estado puede reiniciarse.
 
 ## Verificacion
 
-Backend:
+Despues del despliegue, revisa:
 
 ```text
-https://TU-SERVICIO.onrender.com/api/health
+https://TU-APP.vercel.app/api/health
 ```
 
 Debe responder:
@@ -65,14 +29,15 @@ Debe responder:
 ```json
 {
   "service": "LabTurn API",
+  "mode": "vercel_demo",
   "status": "ok",
   "store": "memory",
-  "workers": 1
+  "warning": "Estado temporal en memoria; Vercel no garantiza una unica instancia persistente."
 }
 ```
 
-Frontend:
+Luego prueba:
 
-- `/clientes`: genera turnos.
-- `/atencion`: llama y finaliza turnos desde cuatro mesas.
-- `/clientes/monitor`: muestra llamados y reproduce sonido cuando se habilita.
+- `/clientes`: generar turnos.
+- `/atencion`: llamar y finalizar desde las cuatro mesas.
+- `/clientes/monitor`: ver el ultimo llamado y activar sonido.

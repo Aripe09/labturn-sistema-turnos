@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { interval, Observable, startWith, switchMap, throwError } from 'rxjs';
+import { interval, Observable, startWith, switchMap } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
@@ -47,7 +47,7 @@ export interface CallNextResponse {
 
 @Injectable({ providedIn: 'root' })
 export class TurnosService {
-  private readonly apiUrl = this.resolveApiUrl();
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -59,46 +59,19 @@ export class TurnosService {
   }
 
   getState(): Observable<AppState> {
-    if (!this.apiUrl) {
-      return this.missingApiUrlError();
-    }
     return this.http.get<AppState>(`${this.apiUrl}/estado`);
   }
 
   createTurn(): Observable<CreatedTurn> {
-    if (!this.apiUrl) {
-      return this.missingApiUrlError();
-    }
     return this.http.post<CreatedTurn>(`${this.apiUrl}/turnos`, {});
   }
 
   callNext(id: number): Observable<CallNextResponse> {
-    if (!this.apiUrl) {
-      return this.missingApiUrlError();
-    }
     return this.http.post<CallNextResponse>(`${this.apiUrl}/ventanillas/${id}/llamar`, {});
   }
 
   finishDesk(id: number): Observable<FinishDeskResponse> {
-    if (!this.apiUrl) {
-      return this.missingApiUrlError();
-    }
     return this.http.post<FinishDeskResponse>(`${this.apiUrl}/ventanillas/${id}/finalizar`, {});
-  }
-
-  private resolveApiUrl(): string {
-    const runtimeConfig = (window as Window & { __LABTURN_CONFIG__?: { apiUrl?: string } }).__LABTURN_CONFIG__;
-    const configuredUrl = runtimeConfig?.apiUrl || environment.apiUrl;
-    return configuredUrl.replace(/\/+$/, '');
-  }
-
-  private missingApiUrlError<T>(): Observable<T> {
-    return throwError(() => new HttpErrorResponse({
-      status: 0,
-      error: {
-        mensaje: 'Falta configurar LABTURN_API_URL en Vercel con la URL publica de Flask en Render.'
-      }
-    }));
   }
 }
 

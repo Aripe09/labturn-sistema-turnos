@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "start": "ng serve --host 127.0.0.1 --port 4200",
-    "prebuild": "node scripts/write-runtime-config.mjs",
     "build": "ng build",
     "test": "ng test --watch=false",
     "lint": "ng lint"

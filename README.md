@@ -11,10 +11,10 @@ Demostrar un sistema empresarial de turnos que permita generar tickets, visualiz
 - Frontend: Angular, TypeScript, Angular Material y SCSS.
 - Backend: Python con Flask y Flask-CORS.
 - Comunicacion: API REST con polling HTTP cada segundo.
-- Publicacion: Angular en Vercel y Flask en Render.
+- Publicacion: Angular y Flask en Vercel.
 - Control de versiones: Git y GitHub.
 
-No utiliza bases de datos, Redis, Upstash, KV, Firebase, Supabase, WebSockets, voz, Web Speech API, React, Vue ni Node.js como backend.
+No utiliza bases de datos, Redis, Upstash, Render, KV, Firebase, Supabase, WebSockets, voz, Web Speech API, React, Vue ni Node.js como backend.
 
 ## Funcionalidades
 
@@ -144,7 +144,7 @@ Pruebas esperadas:
 
 ## Vercel
 
-El proyecto esta preparado para desplegar el frontend Angular en Vercel desde el `vercel.json` de la raiz. El backend Flask se despliega aparte en Render.
+El proyecto esta preparado para desplegar Angular y Flask unicamente en Vercel desde el `vercel.json` de la raiz.
 
 Para publicar:
 
@@ -154,24 +154,13 @@ cd frontend && npm install && cd ..
 vercel --prod
 ```
 
-Importante: configura `LABTURN_API_URL` en Vercel con la URL real de Render terminada en `/api`, por ejemplo `https://tu-servicio.onrender.com/api`.
-
-No inventes esa URL: Render la entrega cuando creas el Web Service.
-
-## Render
-
-El backend Flask usa memoria RAM temporal y debe ejecutarse con un solo worker:
-
-```bash
-gunicorn --workers 1 --threads 8 --timeout 60 --bind 0.0.0.0:$PORT backend.app:app
-```
-
-El archivo `render.yaml` ya incluye esta configuracion.
+Angular usa rutas relativas `/api`, asi que no requiere configurar URLs externas.
 
 ## Limitaciones tecnicas
 
 - El estado vive en memoria RAM del proceso Flask.
-- Si Render reinicia o duerme el servicio, los turnos se reinician.
+- Vercel Functions no garantizan una unica instancia persistente; esta version es una demo temporal.
+- Si Vercel recicla o escala la Function, los turnos pueden reiniciarse.
 - No hay persistencia historica porque no se utiliza ninguna base de datos ni almacenamiento externo.
 - El sonido del monitor requiere presionar `Activar sonido` por politicas de navegadores.
 

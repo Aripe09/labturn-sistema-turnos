@@ -160,7 +160,8 @@ def health():
         "status": "ok",
         "service": "LabTurn API",
         "store": "memory",
-        "workers": 1,
+        "mode": "vercel_demo",
+        "warning": "Estado temporal en memoria; Vercel no garantiza una unica instancia persistente.",
     })
 
 

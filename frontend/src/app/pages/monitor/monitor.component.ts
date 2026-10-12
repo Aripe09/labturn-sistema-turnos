@@ -48,8 +48,8 @@ export class MonitorComponent implements OnInit, OnDestroy {
     }
   }
 
-  activarSonido(): void {
-    void this.soundService.enable();
+  alternarSonido(): void {
+    void this.soundService.toggle();
   }
 
   trackDesk(_: number, desk: Desk): number {

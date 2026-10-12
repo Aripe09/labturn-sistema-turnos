@@ -2,9 +2,9 @@
   <header class="monitor-header">
     <app-brand [light]="true" />
     <div class="monitor-header__meta">
-      <button mat-stroked-button class="sound-button" (click)="activarSonido()">
+      <button mat-stroked-button class="sound-button" (click)="alternarSonido()">
         <mat-icon>{{ soundService.isEnabled ? 'volume_up' : 'notifications_active' }}</mat-icon>
-        {{ soundService.isEnabled ? 'Sonido activo' : 'Activar sonido' }}
+        {{ soundService.isEnabled ? 'Sonido activado' : 'Activar sonido' }}
       </button>
       <time>{{ now | date:'HH:mm:ss' }}</time>
     </div>
@@ -27,14 +27,22 @@
       *ngFor="let desk of state.ventanillas; trackBy: trackDesk"
       [class.desk-card--active]="announcement?.mesa === desk.id"
     >
-      <span>{{ desk.nombre | uppercase }}</span>
-      <strong>{{ desk.turno_actual ? 'ATENDIENDO ' + desk.turno_actual : 'DISPONIBLE' }}</strong>
+      <div class="desk-card__heading">
+        <span>{{ desk.nombre | uppercase }}</span>
+        <small [class.available]="desk.estado === 'disponible'">
+          {{ desk.turno_actual ? 'ATENDIENDO' : 'DISPONIBLE' }}
+        </small>
+      </div>
+      <strong [class.desk-card__turn--empty]="!desk.turno_actual">
+        {{ desk.turno_actual || 'Sin turno asignado' }}
+      </strong>
     </article>
   </section>
 
   <section class="announcement" *ngIf="announcement">
-    <span>Nuevo llamado</span>
-    <strong>{{ announcement.mensaje }}</strong>
+    <span><mat-icon>notifications_active</mat-icon> Nuevo turno</span>
+    <strong>{{ announcement.turno }}</strong>
+    <p>Pase a Mesa {{ announcement.mesa }}</p>
   </section>
 </main>
 

@@ -51,7 +51,13 @@ Publicar unicamente Angular en Vercel.
 
 No cumple el objetivo completo, porque el boton de generar turno no funcionara sin backend publico.
 
-## Decision necesaria
+## Decision tomada
 
-Para publicar LabTurn completo y funcional desde cualquier dispositivo, se necesita elegir una de estas opciones. No se debe desplegar el backend Flask con memoria RAM en Vercel como solucion final porque no cumple el requisito de datos compartidos reales.
+Se usara la opcion A: Vercel + Redis/KV. El proyecto incluye `api/index.py`, una API Flask compatible con Vercel Functions que exige Redis/KV en produccion y usa memoria solo como fallback local.
+
+Variables requeridas en Vercel:
+
+- `KV_REST_API_URL` o `UPSTASH_REDIS_REST_URL`
+- `KV_REST_API_TOKEN` o `UPSTASH_REDIS_REST_TOKEN`
+- `LABTURN_STATE_KEY` opcional para cambiar la llave de estado compartido.
 

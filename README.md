@@ -88,18 +88,27 @@ npm install
 
 ## Ejecucion local
 
-En una terminal:
+Forma recomendada en Windows PowerShell:
 
-```bash
-cd backend
-.venv\Scripts\activate
-flask --app app run --host 127.0.0.1 --port 5000
+```powershell
+cd C:\Users\pedra\Documents\Codex\2026-10-12\act-a-como-un-desarrollador-full\outputs\labturn-sistema-turnos
+.\iniciar-labturn.ps1
 ```
 
-En otra terminal:
+Ejecucion manual del backend:
 
-```bash
+```powershell
+cd backend
+python -m pip install --target .deps -r requirements.txt
+$env:PYTHONPATH="$PWD\.deps"
+python app.py
+```
+
+Ejecucion manual del frontend:
+
+```powershell
 cd frontend
+npm install
 npm start
 ```
 

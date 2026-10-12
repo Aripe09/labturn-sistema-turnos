@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Subscription, finalize } from 'rxjs';
@@ -31,8 +32,8 @@ export class ClientesComponent {
           this.state = state;
           this.error = null;
         },
-        error: () => {
-          this.error = 'No se pudo conectar con el backend Flask. Verifica que este ejecutandose en http://127.0.0.1:5000.';
+        error: (error: HttpErrorResponse) => {
+          this.error = this.describeHttpError(error, 'No se pudo consultar el estado del sistema.');
         }
       })
     );
@@ -58,10 +59,22 @@ export class ClientesComponent {
             ? `Pasa a Mesa ${response.mesa}`
             : 'Tu turno esta en espera';
         },
-        error: () => {
-          this.error = 'No fue posible generar el turno. Confirma que Flask este activo y vuelve a intentarlo.';
+        error: (error: HttpErrorResponse) => {
+          this.error = this.describeHttpError(error, 'No fue posible generar el turno. Intentalo nuevamente.');
         }
       });
+  }
+
+  private describeHttpError(error: HttpErrorResponse, fallback: string): string {
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor Flask. Inicia el backend en http://127.0.0.1:5000 y vuelve a intentarlo.';
+    }
+
+    if (error.status >= 500) {
+      return 'El servidor Flask devolvio un error. Revisa la terminal del backend.';
+    }
+
+    return fallback;
   }
 }
 

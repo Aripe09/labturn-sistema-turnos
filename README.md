@@ -191,4 +191,5 @@ No se envio ninguna invitacion automaticamente.
 ## Autoria
 
 Proyecto preparado para la presentacion academica de LabTurn por `Aripe09`.
+Despliegue inicial de LabTurn mediante GitHub y Vercel.
 

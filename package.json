@@ -1,0 +1,19 @@
+{
+  "name": "labturn-sistema-turnos",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run setup && npx --yes concurrently -k --names Flask,Angular --prefix-colors cyan,green \"npm run start:backend\" \"npm run start:frontend\"",
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-backend.ps1",
+    "setup:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-frontend.ps1",
+    "start:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-backend.ps1",
+    "start:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-frontend.ps1",
+    "test:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-backend.ps1",
+    "build:frontend": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
+

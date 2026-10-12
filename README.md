@@ -92,8 +92,10 @@ Forma recomendada en Windows PowerShell:
 
 ```powershell
 cd C:\Users\pedra\Documents\Codex\2026-10-12\act-a-como-un-desarrollador-full\outputs\labturn-sistema-turnos
-.\iniciar-labturn.ps1
+npm start
 ```
+
+Ese comando prepara dependencias, inicia Flask en el puerto `5000`, inicia Angular en el puerto `4200` y mantiene ambos procesos activos en la misma terminal. Para detener el sistema completo, presionar `Ctrl+C`.
 
 Ejecucion manual del backend:
 

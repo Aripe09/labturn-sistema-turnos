@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from copy import deepcopy
+import os
 from threading import RLock
 from typing import Any
 
@@ -10,7 +11,16 @@ from flask_cors import CORS
 
 
 app = Flask(__name__)
-CORS(app)
+
+
+def _allowed_origins() -> list[str] | str:
+    origins = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if not origins:
+        return "*"
+    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
+
+CORS(app, origins=_allowed_origins())
 
 
 class LabTurnState:
@@ -146,7 +156,12 @@ def finish_desk(desk_id: int):
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "service": "LabTurn API"})
+    return jsonify({
+        "status": "ok",
+        "service": "LabTurn API",
+        "store": "memory",
+        "workers": 1,
+    })
 
 
 if __name__ == "__main__":

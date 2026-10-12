@@ -64,13 +64,13 @@ export class ClientesComponent {
   }
 
   private describeHttpError(error: HttpErrorResponse, fallback: string): string {
-    if (error.status === 0) {
-      return 'No se pudo conectar con el servidor. Revisa tu conexion e intentalo de nuevo.';
-    }
-
     const serverMessage = error.error?.mensaje || error.error?.error;
     if (serverMessage) {
       return serverMessage;
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor. Revisa tu conexion e intentalo de nuevo.';
     }
 
     return fallback;

@@ -23,7 +23,7 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": ["src/favicon.svg"],
+            "assets": ["src/favicon.svg", "src/assets"],
             "styles": ["src/styles.scss"],
             "scripts": []
           },

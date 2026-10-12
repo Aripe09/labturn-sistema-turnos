@@ -11,18 +11,17 @@ Demostrar un sistema empresarial de turnos que permita generar tickets, visualiz
 - Frontend: Angular, TypeScript, Angular Material y SCSS.
 - Backend: Python con Flask y Flask-CORS.
 - Comunicacion: API REST con polling HTTP cada segundo.
-- Publicacion del frontend: preparado para Vercel.
+- Publicacion: Angular en Vercel y Flask en Render.
 - Control de versiones: Git y GitHub.
 
-No utiliza bases de datos, WebSockets, Render, Firebase, Supabase, voz, Web Speech API, React, Vue ni Node.js como backend.
+No utiliza bases de datos, Redis, Upstash, KV, Firebase, Supabase, WebSockets, voz, Web Speech API, React, Vue ni Node.js como backend.
 
 ## Funcionalidades
 
 - Generacion consecutiva de turnos: `A001`, `A002`, `A003`...
-- Asignacion automatica a la primera mesa disponible.
-- Cola de espera FIFO cuando las cuatro mesas estan ocupadas.
+- Cola de espera FIFO.
 - Panel publico tipo monitor con cuatro tarjetas grandes.
-- Panel de atencion para finalizar turnos y asignar automaticamente el siguiente.
+- Panel de atencion para llamar el siguiente turno y finalizar turnos.
 - Sonido digital breve de notificacion, activado por el usuario desde el monitor.
 - Identificador de evento por asignacion para evitar sonidos duplicados.
 - Navegacion interna desde una sola aplicacion web.
@@ -53,18 +52,18 @@ Endpoints:
 - `GET /api/estado`
 - `GET /api/ventanillas`
 - `GET /api/turnos/espera`
+- `POST /api/ventanillas/{id}/llamar`
 - `POST /api/ventanillas/{id}/finalizar`
 - `GET /api/health`
 
 ## Flujo de ejemplo
 
-1. Se genera `A001` y se asigna a Mesa 1.
-2. Se genera `A002` y se asigna a Mesa 2.
-3. Se genera `A003` y se asigna a Mesa 3.
-4. Se genera `A004` y se asigna a Mesa 4.
-5. Se genera `A005` y queda en espera.
-6. Al finalizar Mesa 2, `A005` se asigna automaticamente a Mesa 2.
-7. El monitor recibe un nuevo `id_evento`, muestra el aviso destacado y reproduce una campanita si el sonido fue habilitado.
+1. Se genera `A001` y queda en espera.
+2. Se genera `A002` y queda en espera.
+3. Mesa 1 llama el siguiente turno y recibe `A001`.
+4. Mesa 2 llama el siguiente turno y recibe `A002`.
+5. Al finalizar Mesa 1, la mesa queda disponible.
+6. El monitor recibe un nuevo `id_evento`, muestra el aviso destacado y reproduce una campanita si el sonido fue habilitado.
 
 ## Instalacion
 
@@ -145,7 +144,7 @@ Pruebas esperadas:
 
 ## Vercel
 
-El proyecto esta preparado para desplegar frontend Angular y API Flask serverless desde el `vercel.json` de la raiz.
+El proyecto esta preparado para desplegar el frontend Angular en Vercel desde el `vercel.json` de la raiz. El backend Flask se despliega aparte en Render.
 
 Para publicar:
 
@@ -155,15 +154,25 @@ cd frontend && npm install && cd ..
 vercel --prod
 ```
 
-Importante: en produccion Vercel necesita almacenamiento compartido. Configura `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` en las variables de entorno del proyecto. Tambien se aceptan `KV_REST_API_URL` y `KV_REST_API_TOKEN`.
+Importante: configura `LABTURN_API_URL` en Vercel con la URL real de Render terminada en `/api`, por ejemplo `https://tu-servicio.onrender.com/api`.
 
-En produccion Angular usa `/api` como URL base. Ver `DEPLOYMENT.md` para los detalles de Upstash Redis y el comportamiento de `/api/health`.
+No inventes esa URL: Render la entrega cuando creas el Web Service.
+
+## Render
+
+El backend Flask usa memoria RAM temporal y debe ejecutarse con un solo worker:
+
+```bash
+gunicorn --workers 1 --threads 8 --timeout 60 --bind 0.0.0.0:$PORT backend.app:app
+```
+
+El archivo `render.yaml` ya incluye esta configuracion.
 
 ## Limitaciones tecnicas
 
-- El estado de produccion vive en Upstash Redis o Vercel KV compatible con Redis REST.
-- El fallback en memoria es solo para desarrollo local.
-- No hay persistencia historica permanente porque el sistema mantiene un estado operativo temporal de turnos.
+- El estado vive en memoria RAM del proceso Flask.
+- Si Render reinicia o duerme el servicio, los turnos se reinician.
+- No hay persistencia historica porque no se utiliza ninguna base de datos ni almacenamiento externo.
 - El sonido del monitor requiere presionar `Activar sonido` por politicas de navegadores.
 
 ## GitHub

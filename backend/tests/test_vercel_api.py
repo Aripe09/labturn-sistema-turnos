@@ -1,31 +1,13 @@
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from api.index import app, memory_store
+from api.index import app
+from backend.app import store
 
 
 def client():
-    os.environ.pop("VERCEL", None)
-    os.environ.pop("KV_REST_API_URL", None)
-    os.environ.pop("KV_REST_API_TOKEN", None)
-    os.environ.pop("UPSTASH_REDIS_REST_URL", None)
-    os.environ.pop("UPSTASH_REDIS_REST_TOKEN", None)
-    memory_store._state = {
-        "next_number": 1,
-        "waiting": [],
-        "last_called": None,
-        "event_counter": 0,
-        "generated_count": 0,
-        "finished_count": 0,
-        "desks": [
-            {"id": 1, "nombre": "Mesa 1", "estado": "disponible", "turno_actual": None},
-            {"id": 2, "nombre": "Mesa 2", "estado": "disponible", "turno_actual": None},
-            {"id": 3, "nombre": "Mesa 3", "estado": "disponible", "turno_actual": None},
-            {"id": 4, "nombre": "Mesa 4", "estado": "disponible", "turno_actual": None},
-        ],
-    }
+    store.reset_for_tests()
     app.config.update(TESTING=True)
     return app.test_client()
 

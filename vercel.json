@@ -2,16 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist/labturn-frontend/browser",
-  "functions": {
-    "api/index.py": {
-      "excludeFiles": "{backend/tests/**,frontend/node_modules/**,frontend/dist/**,.git/**,**/*.log}"
-    }
-  },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

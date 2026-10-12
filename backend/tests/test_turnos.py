@@ -13,7 +13,8 @@ def test_generates_consecutive_turns_and_assigns_available_desks():
     created = [test_client.post("/api/turnos").get_json() for _ in range(4)]
 
     assert [item["turno"] for item in created] == ["A001", "A002", "A003", "A004"]
-    assert [item["mesa"]["mesa"] if isinstance(item["mesa"], dict) else item["mesa"] for item in created] == [1, 2, 3, 4]
+    assert [item["mesa"] for item in created] == [1, 2, 3, 4]
+    assert [item["asignacion"]["mesa"] for item in created] == [1, 2, 3, 4]
 
 
 def test_fifo_queue_and_auto_assignment_after_finish():

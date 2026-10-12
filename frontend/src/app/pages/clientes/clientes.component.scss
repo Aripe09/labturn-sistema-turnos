@@ -76,6 +76,47 @@ h1 {
   animation: ticketIn 420ms ease-out;
 }
 
+.kiosk-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.kiosk-stats div,
+.error-message {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.kiosk-stats div {
+  padding: 16px;
+  text-align: center;
+}
+
+.kiosk-stats span {
+  display: block;
+  color: #9ff3e8;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.kiosk-stats strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 30px;
+}
+
+.error-message {
+  width: min(620px, 100%);
+  margin: 24px auto 0;
+  padding: 14px 16px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  font-weight: 700;
+}
+
 .ticket span {
   color: #2563eb;
   font-weight: 800;
@@ -112,6 +153,10 @@ h1 {
 
   .kiosk {
     min-height: calc(100vh - 32px);
+  }
+
+  .kiosk-stats {
+    grid-template-columns: 1fr;
   }
 }
 

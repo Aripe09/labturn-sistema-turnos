@@ -11,12 +11,29 @@
         <mat-icon>{{ loading ? 'hourglass_top' : 'confirmation_number' }}</mat-icon>
         GENERAR MI TURNO
       </button>
+
+      <p class="error-message" *ngIf="error">{{ error }}</p>
     </div>
 
     <section class="ticket" *ngIf="turno" [class.ticket--show]="turno">
       <span>Tu turno</span>
       <strong>{{ turno }}</strong>
       <p>{{ detalle }}</p>
+    </section>
+
+    <section class="kiosk-stats">
+      <div>
+        <span>En espera</span>
+        <strong>{{ state?.cantidad_espera || 0 }}</strong>
+      </div>
+      <div>
+        <span>Generados</span>
+        <strong>{{ state?.total_generados || 0 }}</strong>
+      </div>
+      <div>
+        <span>Atendidos</span>
+        <strong>{{ state?.total_atendidos || 0 }}</strong>
+      </div>
     </section>
   </section>
 </main>

@@ -24,12 +24,15 @@ export interface AppState {
   cantidad_espera: number;
   ultimo_llamado: AssignmentEvent | null;
   siguiente_turno: string;
+  total_generados: number;
+  total_atendidos: number;
 }
 
 export interface CreatedTurn {
   turno: string;
   estado: 'asignado' | 'en_espera';
-  mesa: AssignmentEvent | null;
+  mesa: number | null;
+  asignacion: AssignmentEvent | null;
 }
 
 export interface FinishDeskResponse {

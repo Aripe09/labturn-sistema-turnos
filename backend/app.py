@@ -22,6 +22,8 @@ class LabTurnState:
         self._waiting: deque[str] = deque()
         self._last_called: dict[str, Any] | None = None
         self._event_counter = 0
+        self._generated_count = 0
+        self._finished_count = 0
         self._desks = [
             {"id": 1, "nombre": "Mesa 1", "estado": "disponible", "turno_actual": None},
             {"id": 2, "nombre": "Mesa 2", "estado": "disponible", "turno_actual": None},
@@ -37,13 +39,14 @@ class LabTurnState:
         with self._lock:
             turn = f"A{self._next_number:03d}"
             self._next_number += 1
+            self._generated_count += 1
 
             assigned = self._assign_to_first_available(turn)
             if assigned is None:
                 self._waiting.append(turn)
-                return {"turno": turn, "estado": "en_espera", "mesa": None}
+                return {"turno": turn, "estado": "en_espera", "mesa": None, "asignacion": None}
 
-            return {"turno": turn, "estado": "asignado", "mesa": assigned["mesa"]}
+            return {"turno": turn, "estado": "asignado", "mesa": assigned["mesa"], "asignacion": assigned}
 
     def finish_desk(self, desk_id: int) -> dict[str, Any] | None:
         with self._lock:
@@ -54,6 +57,8 @@ class LabTurnState:
             finished_turn = desk["turno_actual"]
             desk["turno_actual"] = None
             desk["estado"] = "disponible"
+            if finished_turn is not None:
+                self._finished_count += 1
 
             next_assignment = None
             if self._waiting:
@@ -74,6 +79,8 @@ class LabTurnState:
                 "cantidad_espera": len(self._waiting),
                 "ultimo_llamado": deepcopy(self._last_called),
                 "siguiente_turno": f"A{self._next_number:03d}",
+                "total_generados": self._generated_count,
+                "total_atendidos": self._finished_count,
             }
 
     def desks(self) -> list[dict[str, Any]]:
@@ -119,6 +126,11 @@ def get_state():
 @app.get("/api/ventanillas")
 def get_desks():
     return jsonify({"ventanillas": store.desks()})
+
+
+@app.get("/api/turnos/espera")
+def get_waiting_turns():
+    return jsonify({"turnos_en_espera": store.state()["turnos_en_espera"]})
 
 
 @app.post("/api/ventanillas/<int:desk_id>/finalizar")

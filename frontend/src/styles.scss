@@ -71,6 +71,59 @@ select {
   text-transform: uppercase;
 }
 
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 292px minmax(0, 1fr);
+  background: #f4f7fb;
+}
+
+.app-nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  padding: 28px 22px;
+  border-right: 1px solid #dbe5ef;
+  background: #ffffff;
+  box-shadow: 12px 0 30px rgba(16, 42, 67, 0.06);
+  z-index: 10;
+}
+
+.app-nav nav {
+  display: grid;
+  gap: 10px;
+}
+
+.app-nav a {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: #526779;
+  text-decoration: none;
+  font-weight: 800;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.app-nav a:hover,
+.app-nav a.active {
+  color: #102a43;
+  background: #eaf2ff;
+}
+
+.app-nav a.active {
+  box-shadow: inset 4px 0 0 #14b8a6;
+}
+
+.app-content {
+  min-width: 0;
+}
+
 @media (max-width: 520px) {
   .brand__mark {
     width: 48px;
@@ -83,6 +136,22 @@ select {
 
   .brand span {
     max-width: 210px;
+  }
+}
+
+@media (max-width: 920px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-nav {
+    position: static;
+    height: auto;
+    gap: 18px;
+  }
+
+  .app-nav nav {
+    grid-template-columns: 1fr;
   }
 }
 

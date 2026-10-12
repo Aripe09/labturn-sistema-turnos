@@ -1,6 +1,10 @@
 # LabTurn - Sistema Inteligente de Gestion de Turnos
 
-LabTurn es una propuesta tecnologica profesional para gestionar turnos de atencion en un laboratorio. Incluye un frontend Angular con tres pantallas y un backend Flask con una cola FIFO en memoria para cuatro mesas de atencion.
+LabTurn es una propuesta tecnologica profesional para gestionar turnos de atencion en un laboratorio. Incluye una aplicacion Angular integrada con navegacion interna y un backend Flask con una cola FIFO en memoria para cuatro mesas de atencion.
+
+## Objetivo
+
+Demostrar un sistema empresarial de turnos que permita generar tickets, visualizar llamados en un monitor publico y administrar cuatro mesas de atencion desde un panel operativo, sin solicitar datos personales y sin utilizar bases de datos.
 
 ## Tecnologias utilizadas
 
@@ -21,6 +25,9 @@ No utiliza bases de datos, WebSockets, Render, Firebase, Supabase, voz, Web Spee
 - Panel de atencion para finalizar turnos y asignar automaticamente el siguiente.
 - Sonido digital breve de notificacion, activado por el usuario desde el monitor.
 - Identificador de evento por asignacion para evitar sonidos duplicados.
+- Navegacion interna desde una sola aplicacion web.
+- Estadisticas de turnos generados, atendidos y pendientes.
+- Mensajes de error cuando la API Flask no esta disponible.
 - Diseno responsive con identidad visual premium.
 
 ## Arquitectura
@@ -35,6 +42,7 @@ labturn-sistema-turnos/
 
 Pantallas:
 
+- `/`: abre la aplicacion integrada de LabTurn.
 - `/clientes`: generador de turnos de autoservicio.
 - `/clientes/monitor`: monitor publico de turnos.
 - `/atencion`: panel de control de cuatro mesas.
@@ -44,8 +52,19 @@ Endpoints:
 - `POST /api/turnos`
 - `GET /api/estado`
 - `GET /api/ventanillas`
+- `GET /api/turnos/espera`
 - `POST /api/ventanillas/{id}/finalizar`
 - `GET /api/health`
+
+## Flujo de ejemplo
+
+1. Se genera `A001` y se asigna a Mesa 1.
+2. Se genera `A002` y se asigna a Mesa 2.
+3. Se genera `A003` y se asigna a Mesa 3.
+4. Se genera `A004` y se asigna a Mesa 4.
+5. Se genera `A005` y queda en espera.
+6. Al finalizar Mesa 2, `A005` se asigna automaticamente a Mesa 2.
+7. El monitor recibe un nuevo `id_evento`, muestra el aviso destacado y reproduce una campanita si el sonido fue habilitado.
 
 ## Instalacion
 
@@ -86,6 +105,7 @@ npm start
 
 Abrir:
 
+- Aplicacion integrada: `http://127.0.0.1:4200/`
 - Clientes: `http://127.0.0.1:4200/clientes`
 - Monitor: `http://127.0.0.1:4200/clientes/monitor`
 - Atencion: `http://127.0.0.1:4200/atencion`
@@ -106,7 +126,11 @@ cd frontend
 npm run build
 ```
 
-Las pruebas cubren generacion consecutiva, asignacion automatica, cola FIFO, finalizacion y reasignacion del siguiente turno.
+Pruebas realizadas:
+
+- Backend: `3 passed` con pytest.
+- Frontend: `npm run build` completado correctamente.
+- Flujo cubierto: generacion consecutiva, asignacion automatica, cola FIFO, finalizacion y reasignacion del siguiente turno.
 
 ## Vercel
 
@@ -134,17 +158,13 @@ Si el frontend publicado necesita consumir un backend remoto, configurar `apiUrl
 
 ## GitHub
 
-Repositorio sugerido: `labturn-sistema-turnos`.
+Repositorio esperado: `https://github.com/Aripe09/labturn-sistema-turnos`.
 
-Comandos para subirlo si ya tienes un repositorio creado en GitHub:
+Comandos de publicacion:
 
 ```bash
-git init
-git add .
-git commit -m "Implement LabTurn turn management system"
-git branch -M main
-git remote add origin https://github.com/TU_USUARIO/labturn-sistema-turnos.git
-git push -u origin main
+gh auth login -h github.com
+gh repo create labturn-sistema-turnos --public --source . --remote origin --push
 ```
 
 Para agregar al docente `alextessfp` como colaborador en GitHub:
@@ -156,4 +176,8 @@ Para agregar al docente `alextessfp` como colaborador en GitHub:
 5. Escribir `alextessfp` y confirmar la invitacion.
 
 No se envio ninguna invitacion automaticamente.
+
+## Autoria
+
+Proyecto preparado para la presentacion academica de LabTurn por `Aripe09`.
 

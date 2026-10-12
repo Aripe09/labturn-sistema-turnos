@@ -8,6 +8,10 @@ from api.index import app, memory_store
 
 def client():
     os.environ.pop("VERCEL", None)
+    os.environ.pop("KV_REST_API_URL", None)
+    os.environ.pop("KV_REST_API_TOKEN", None)
+    os.environ.pop("UPSTASH_REDIS_REST_URL", None)
+    os.environ.pop("UPSTASH_REDIS_REST_TOKEN", None)
     memory_store._state = {
         "next_number": 1,
         "waiting": [],
@@ -29,18 +33,30 @@ def client():
 def test_vercel_api_turn_flow_with_local_fallback():
     test_client = client()
 
-    created = [test_client.post("/api/turnos", json={}).get_json() for _ in range(5)]
+    created = [test_client.post("/api/turnos", json={}).get_json() for _ in range(2)]
 
-    assert [item["turno"] for item in created] == ["A001", "A002", "A003", "A004", "A005"]
-    assert [item["mesa"] for item in created] == [1, 2, 3, 4, None]
+    assert [item["turno"] for item in created] == ["A001", "A002"]
+    assert [item["estado"] for item in created] == ["en_espera", "en_espera"]
 
-    finish = test_client.post("/api/ventanillas/2/finalizar", json={}).get_json()
-    assert finish["turno_finalizado"] == "A002"
-    assert finish["nueva_asignacion"]["turno"] == "A005"
-    assert finish["nueva_asignacion"]["mesa"] == 2
+    call_1 = test_client.post("/api/ventanillas/1/llamar", json={}).get_json()
+    assert call_1["asignacion"]["turno"] == "A001"
+    assert call_1["asignacion"]["mesa"] == 1
+
+    duplicate_call = test_client.post("/api/ventanillas/1/llamar", json={})
+    assert duplicate_call.status_code == 409
+
+    call_2 = test_client.post("/api/ventanillas/2/llamar", json={}).get_json()
+    assert call_2["asignacion"]["turno"] == "A002"
+    assert call_2["asignacion"]["mesa"] == 2
+
+    finish_1 = test_client.post("/api/ventanillas/1/finalizar", json={}).get_json()
+    assert finish_1["turno_finalizado"] == "A001"
+
+    finish_2 = test_client.post("/api/ventanillas/2/finalizar", json={}).get_json()
+    assert finish_2["turno_finalizado"] == "A002"
 
     state = test_client.get("/api/estado").get_json()
     assert state["cantidad_espera"] == 0
-    assert state["total_generados"] == 5
-    assert state["total_atendidos"] == 1
+    assert state["total_generados"] == 2
+    assert state["total_atendidos"] == 2
 

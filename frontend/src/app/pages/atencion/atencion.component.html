@@ -25,10 +25,22 @@
       </div>
 
       <button
+        *ngIf="!desk.turno_actual"
+        mat-flat-button
+        color="primary"
+        (click)="llamarSiguiente(desk)"
+        [disabled]="(state.cantidad_espera || 0) === 0 || busyDeskId === desk.id"
+      >
+        <mat-icon>record_voice_over</mat-icon>
+        LLAMAR SIGUIENTE
+      </button>
+
+      <button
+        *ngIf="desk.turno_actual"
         mat-flat-button
         color="primary"
         (click)="finalizar(desk)"
-        [disabled]="!desk.turno_actual || busyDeskId === desk.id"
+        [disabled]="busyDeskId === desk.id"
       >
         <mat-icon>done_all</mat-icon>
         FINALIZAR ATENCIÓN

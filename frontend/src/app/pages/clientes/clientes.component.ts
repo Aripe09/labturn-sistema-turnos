@@ -55,9 +55,7 @@ export class ClientesComponent {
       .subscribe({
         next: (response) => {
           this.turno = response.turno;
-          this.detalle = response.estado === 'asignado' && response.mesa !== null
-            ? `Pasa a Mesa ${response.mesa}`
-            : 'Tu turno esta en espera';
+          this.detalle = 'Tu turno esta en espera';
         },
         error: (error: HttpErrorResponse) => {
           this.error = this.describeHttpError(error, 'No fue posible generar el turno. Intentalo nuevamente.');
@@ -67,11 +65,12 @@ export class ClientesComponent {
 
   private describeHttpError(error: HttpErrorResponse, fallback: string): string {
     if (error.status === 0) {
-      return 'No se pudo conectar con el servidor Flask. Inicia el backend en http://127.0.0.1:5000 y vuelve a intentarlo.';
+      return 'No se pudo conectar con el servidor. Revisa tu conexion e intentalo de nuevo.';
     }
 
-    if (error.status >= 500) {
-      return 'El servidor Flask devolvio un error. Revisa la terminal del backend.';
+    const serverMessage = error.error?.mensaje || error.error?.error;
+    if (serverMessage) {
+      return serverMessage;
     }
 
     return fallback;

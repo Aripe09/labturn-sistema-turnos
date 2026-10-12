@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from collections import deque
 from copy import deepcopy
 from threading import RLock
 from typing import Any
@@ -69,14 +68,22 @@ class MemoryStore:
             turn = f"A{self._state['next_number']:03d}"
             self._state["next_number"] += 1
             self._state["generated_count"] += 1
+            self._state["waiting"].append(turn)
 
-            desk = next((item for item in self._state["desks"] if item["estado"] == "disponible"), None)
+            return {"turno": turn, "estado": "en_espera", "mesa": None, "asignacion": None}
+
+    def call_next(self, desk_id: int) -> tuple[dict[str, Any], int]:
+        with self._lock:
+            desk = next((item for item in self._state["desks"] if item["id"] == desk_id), None)
             if desk is None:
-                self._state["waiting"].append(turn)
-                return {"turno": turn, "estado": "en_espera", "mesa": None, "asignacion": None}
+                return {"error": "Mesa no encontrada"}, 404
+            if desk["turno_actual"] is not None:
+                return {"error": f"Mesa {desk_id} ya esta atendiendo un turno"}, 409
+            if not self._state["waiting"]:
+                return {"error": "No hay turnos en espera"}, 409
 
-            assigned = _assign_to_desk(self._state, desk, turn)
-            return {"turno": turn, "estado": "asignado", "mesa": assigned["mesa"], "asignacion": assigned}
+            assigned = _assign_to_desk(self._state, desk, self._state["waiting"].pop(0))
+            return {"mesa": desk_id, "asignacion": assigned}, 200
 
     def finish_desk(self, desk_id: int) -> dict[str, Any] | None:
         with self._lock:
@@ -90,11 +97,7 @@ class MemoryStore:
             if finished_turn is not None:
                 self._state["finished_count"] += 1
 
-            next_assignment = None
-            if self._state["waiting"]:
-                next_assignment = _assign_to_desk(self._state, desk, self._state["waiting"].pop(0))
-
-            return {"mesa": desk_id, "turno_finalizado": finished_turn, "nueva_asignacion": next_assignment}
+            return {"mesa": desk_id, "turno_finalizado": finished_turn}
 
     def state(self) -> dict[str, Any]:
         with self._lock:
@@ -158,21 +161,28 @@ if action == "create" then
   local turn = string.format("A%03d", state.next_number)
   state.next_number = state.next_number + 1
   state.generated_count = state.generated_count + 1
+  table.insert(state.waiting, turn)
 
-  local free_desk = nil
-  for i, desk in ipairs(state.desks) do
-    if desk.estado == "disponible" then
-      free_desk = desk
+  result = {turno = turn, estado = "en_espera", mesa = cjson.null, asignacion = cjson.null}
+elseif action == "call" then
+  local desk = nil
+  for i, item in ipairs(state.desks) do
+    if item.id == desk_id then
+      desk = item
       break
     end
   end
 
-  if free_desk then
-    local assignment = assign_to_desk(free_desk, turn)
-    result = {turno = turn, estado = "asignado", mesa = assignment.mesa, asignacion = assignment}
+  if not desk then
+    result = {error = "Mesa no encontrada", status = 404}
+  elseif desk.turno_actual ~= cjson.null then
+    result = {error = "Mesa " .. desk_id .. " ya esta atendiendo un turno", status = 409}
+  elseif #state.waiting == 0 then
+    result = {error = "No hay turnos en espera", status = 409}
   else
-    table.insert(state.waiting, turn)
-    result = {turno = turn, estado = "en_espera", mesa = cjson.null, asignacion = cjson.null}
+    local next_turn = table.remove(state.waiting, 1)
+    local assignment = assign_to_desk(desk, next_turn)
+    result = {mesa = desk_id, asignacion = assignment}
   end
 elseif action == "finish" then
   local desk = nil
@@ -193,13 +203,7 @@ elseif action == "finish" then
       state.finished_count = state.finished_count + 1
     end
 
-    local next_assignment = cjson.null
-    if #state.waiting > 0 then
-      local next_turn = table.remove(state.waiting, 1)
-      next_assignment = assign_to_desk(desk, next_turn)
-    end
-
-    result = {mesa = desk_id, turno_finalizado = finished_turn, nueva_asignacion = next_assignment}
+    result = {mesa = desk_id, turno_finalizado = finished_turn}
   end
 elseif action == "state" then
   result = public_state()
@@ -233,19 +237,28 @@ class RedisStore:
         if arg is not None:
             payload.append(str(arg))
 
-        response = requests.post(
-            self._url,
-            headers={"Authorization": f"Bearer {self._token}"},
-            json=payload,
-            timeout=8,
-        )
-        response.raise_for_status()
-        data = response.json()
+        try:
+            response = requests.post(
+                self._url,
+                headers={"Authorization": f"Bearer {self._token}"},
+                json=payload,
+                timeout=8,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as error:
+            raise RuntimeError(f"No se pudo comunicar con Upstash Redis: {error}") from error
+        except ValueError as error:
+            raise RuntimeError("Upstash Redis devolvio una respuesta invalida") from error
+
         if "error" in data:
             raise RuntimeError(data["error"])
         result = data.get("result")
         if isinstance(result, str):
-            return json.loads(result)
+            try:
+                return json.loads(result)
+            except ValueError as error:
+                raise RuntimeError("Upstash Redis devolvio datos invalidos") from error
         return result
 
     def create_turn(self) -> dict[str, Any]:
@@ -256,6 +269,10 @@ class RedisStore:
         if result.get("status") == 404:
             return None
         return result
+
+    def call_next(self, desk_id: int) -> tuple[dict[str, Any], int]:
+        result = self._command("call", desk_id)
+        return result, int(result.pop("status", 200))
 
     def state(self) -> dict[str, Any]:
         return self._command("state")
@@ -284,7 +301,7 @@ def service_unavailable(error: Exception):
     return jsonify({
         "error": "Redis/KV no configurado",
         "detalle": str(error),
-        "mensaje": "Configura KV_REST_API_URL y KV_REST_API_TOKEN en Vercel para usar LabTurn en internet."
+        "mensaje": "Configura UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN en Vercel para usar LabTurn en internet."
     }), 503
 
 
@@ -326,6 +343,16 @@ def get_waiting_turns():
         return service_unavailable(error)
 
 
+@app.post("/api/ventanillas/<int:desk_id>/llamar")
+def call_next(desk_id: int):
+    try:
+        result, status = get_store().call_next(desk_id)
+    except RuntimeError as error:
+        return service_unavailable(error)
+
+    return jsonify(result), status
+
+
 @app.post("/api/ventanillas/<int:desk_id>/finalizar")
 def finish_desk(desk_id: int):
     try:
@@ -343,6 +370,11 @@ def health():
     try:
         store_type = "redis" if isinstance(get_store(), RedisStore) else "memory"
     except RuntimeError:
-        store_type = "redis_missing"
+        return jsonify({
+            "status": "error",
+            "service": "LabTurn API",
+            "store": "redis_missing",
+            "mensaje": "Faltan UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN en Vercel."
+        }), 503
     return jsonify({"status": "ok", "service": "LabTurn API", "store": store_type})
 

@@ -137,34 +137,33 @@ cd frontend
 npm run build
 ```
 
-Pruebas realizadas:
+Pruebas esperadas:
 
-- Backend: `3 passed` con pytest.
+- Backend: pytest sobre `backend/tests`.
 - Frontend: `npm run build` completado correctamente.
-- Flujo cubierto: generacion consecutiva, asignacion automatica, cola FIFO, finalizacion y reasignacion del siguiente turno.
+- Flujo cubierto: generacion consecutiva, llamado explicito desde mesas, cola FIFO, bloqueo de doble asignacion, finalizacion y monitor por polling.
 
 ## Vercel
 
-El frontend esta preparado con `frontend/vercel.json`.
+El proyecto esta preparado para desplegar frontend Angular y API Flask serverless desde el `vercel.json` de la raiz.
 
 Para publicar:
 
 ```bash
-cd frontend
 npm install
-npm run build
-vercel
+cd frontend && npm install && cd ..
+vercel --prod
 ```
 
-Importante: Vercel solo alojara el frontend Angular. El backend Flask debe ejecutarse como servicio Python aparte para que la API REST exista. Este proyecto no usa Render por restriccion, y tampoco afirma persistencia en memoria dentro de funciones serverless. Para la demostracion completa, ejecutar Flask localmente en un unico proceso.
+Importante: en produccion Vercel necesita almacenamiento compartido. Configura `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` en las variables de entorno del proyecto. Tambien se aceptan `KV_REST_API_URL` y `KV_REST_API_TOKEN`.
 
-En produccion Angular usa `/api` como URL base. Para publicar el sistema completo en internet se requiere un backend publico con estado compartido real. Ver `DEPLOYMENT.md` antes de publicar, porque Flask con memoria RAM en Vercel Functions no garantiza sincronizacion entre usuarios.
+En produccion Angular usa `/api` como URL base. Ver `DEPLOYMENT.md` para los detalles de Upstash Redis y el comportamiento de `/api/health`.
 
 ## Limitaciones tecnicas
 
-- El estado vive en memoria de Python y se pierde al reiniciar Flask.
-- La demo debe ejecutarse con un unico proceso Flask para conservar una sola cola compartida.
-- No hay persistencia historica ni recuperacion ante reinicio porque no se utiliza base de datos.
+- El estado de produccion vive en Upstash Redis o Vercel KV compatible con Redis REST.
+- El fallback en memoria es solo para desarrollo local.
+- No hay persistencia historica permanente porque el sistema mantiene un estado operativo temporal de turnos.
 - El sonido del monitor requiere presionar `Activar sonido` por politicas de navegadores.
 
 ## GitHub

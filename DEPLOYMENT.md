@@ -2,62 +2,38 @@
 
 ## Estado actual
 
-El frontend Angular esta preparado para Vercel y ya no apunta a `localhost` en produccion. La URL de API en produccion queda como `/api`, lista para usar un backend publicado en el mismo dominio o redirigido por Vercel.
+El frontend Angular esta preparado para Vercel y ya no apunta a `localhost` en produccion. La URL de API en produccion queda como `/api`, usando la Function Flask incluida en `api/index.py`.
 
-## Limitacion critica
+## Almacenamiento compartido
 
-El backend Flask actual guarda la cola de turnos en memoria RAM. Esa arquitectura funciona para una demostracion local con un unico proceso Flask, pero no garantiza estado compartido ni persistente en Vercel Functions.
-
-En Vercel, Flask puede ejecutarse como una Function de Python, pero cada solicitud puede terminar en una instancia diferente o reiniciada. Por eso, usar variables globales en memoria puede provocar:
-
-- turnos reiniciados;
-- mesas con estados distintos entre usuarios;
-- duplicados bajo concurrencia;
-- perdida del estado al escalar, dormir o redeplegar.
-
-## Alternativas viables
-
-### Opcion A: Vercel + Redis/KV
-
-Usar Vercel para frontend y backend serverless, pero mover el estado de turnos a un almacenamiento compartido tipo Redis/KV.
-
-Ventajas:
-
-- funciona con HTTPS publico;
-- sincroniza usuarios/dispositivos;
-- conserva cola FIFO de forma centralizada;
-- se integra bien con Vercel.
-
-Requiere autorizacion porque introduce un servicio de datos externo.
-
-### Opcion B: Flask en un servidor Python persistente
-
-Publicar Angular en Vercel y ejecutar Flask en un servidor Python persistente que mantenga un unico proceso en memoria.
-
-Ventajas:
-
-- conserva Flask y la logica actual casi intacta;
-- no requiere base de datos para una demo simple.
-
-Limitaciones:
-
-- si el proceso se reinicia, se pierde el estado;
-- requiere un proveedor de backend distinto de Vercel;
-- no usar Render, por restriccion del proyecto.
-
-### Opcion C: Solo frontend en Vercel
-
-Publicar unicamente Angular en Vercel.
-
-No cumple el objetivo completo, porque el boton de generar turno no funcionara sin backend publico.
-
-## Decision tomada
-
-Se usara la opcion A: Vercel + Redis/KV. El proyecto incluye `api/index.py`, una API Flask compatible con Vercel Functions que exige Redis/KV en produccion y usa memoria solo como fallback local.
+En Vercel, el estado de turnos debe guardarse en Upstash Redis o Vercel KV compatible con Redis REST. Las variables globales de memoria solo se usan como fallback local, porque una Function serverless puede reiniciarse o ejecutarse en instancias distintas.
 
 Variables requeridas en Vercel:
 
-- `KV_REST_API_URL` o `UPSTASH_REDIS_REST_URL`
-- `KV_REST_API_TOKEN` o `UPSTASH_REDIS_REST_TOKEN`
-- `LABTURN_STATE_KEY` opcional para cambiar la llave de estado compartido.
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+Tambien se aceptan los nombres de Vercel KV:
+
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+
+`LABTURN_STATE_KEY` es opcional y permite cambiar la llave donde se guarda el estado compartido. Si faltan las variables en produccion, `/api/health` responde error y la app muestra un mensaje claro.
+
+## Funcionamiento
+
+La API usa una operacion atomica de Redis para:
+
+- generar turnos consecutivos y ponerlos en espera;
+- llamar el siguiente turno desde una mesa;
+- impedir que dos mesas tomen el mismo turno;
+- finalizar una atencion sin reasignar automaticamente.
+
+## Publicacion
+
+El despliegue principal usa el `vercel.json` de la raiz:
+
+```bash
+vercel --prod
+```
 

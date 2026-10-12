@@ -40,13 +40,22 @@ class LabTurnState:
             turn = f"A{self._next_number:03d}"
             self._next_number += 1
             self._generated_count += 1
+            self._waiting.append(turn)
 
-            assigned = self._assign_to_first_available(turn)
-            if assigned is None:
-                self._waiting.append(turn)
-                return {"turno": turn, "estado": "en_espera", "mesa": None, "asignacion": None}
+            return {"turno": turn, "estado": "en_espera", "mesa": None, "asignacion": None}
 
-            return {"turno": turn, "estado": "asignado", "mesa": assigned["mesa"], "asignacion": assigned}
+    def call_next(self, desk_id: int) -> tuple[dict[str, Any], int]:
+        with self._lock:
+            desk = self._find_desk(desk_id)
+            if desk is None:
+                return {"error": "Mesa no encontrada"}, 404
+            if desk["turno_actual"] is not None:
+                return {"error": f"Mesa {desk_id} ya esta atendiendo un turno"}, 409
+            if not self._waiting:
+                return {"error": "No hay turnos en espera"}, 409
+
+            next_turn = self._waiting.popleft()
+            return {"mesa": desk_id, "asignacion": self._assign_to_desk(desk, next_turn)}, 200
 
     def finish_desk(self, desk_id: int) -> dict[str, Any] | None:
         with self._lock:
@@ -60,15 +69,9 @@ class LabTurnState:
             if finished_turn is not None:
                 self._finished_count += 1
 
-            next_assignment = None
-            if self._waiting:
-                next_turn = self._waiting.popleft()
-                next_assignment = self._assign_to_desk(desk, next_turn)
-
             return {
                 "mesa": desk_id,
                 "turno_finalizado": finished_turn,
-                "nueva_asignacion": next_assignment,
             }
 
     def state(self) -> dict[str, Any]:
@@ -89,12 +92,6 @@ class LabTurnState:
 
     def _find_desk(self, desk_id: int) -> dict[str, Any] | None:
         return next((desk for desk in self._desks if desk["id"] == desk_id), None)
-
-    def _assign_to_first_available(self, turn: str) -> dict[str, Any] | None:
-        desk = next((item for item in self._desks if item["estado"] == "disponible"), None)
-        if desk is None:
-            return None
-        return self._assign_to_desk(desk, turn)
 
     def _assign_to_desk(self, desk: dict[str, Any], turn: str) -> dict[str, Any]:
         self._event_counter += 1
@@ -131,6 +128,12 @@ def get_desks():
 @app.get("/api/turnos/espera")
 def get_waiting_turns():
     return jsonify({"turnos_en_espera": store.state()["turnos_en_espera"]})
+
+
+@app.post("/api/ventanillas/<int:desk_id>/llamar")
+def call_next(desk_id: int):
+    result, status = store.call_next(desk_id)
+    return jsonify(result), status
 
 
 @app.post("/api/ventanillas/<int:desk_id>/finalizar")

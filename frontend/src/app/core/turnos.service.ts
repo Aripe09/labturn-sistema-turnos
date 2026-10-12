@@ -38,7 +38,11 @@ export interface CreatedTurn {
 export interface FinishDeskResponse {
   mesa: number;
   turno_finalizado: string | null;
-  nueva_asignacion: AssignmentEvent | null;
+}
+
+export interface CallNextResponse {
+  mesa: number;
+  asignacion: AssignmentEvent;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -60,6 +64,10 @@ export class TurnosService {
 
   createTurn(): Observable<CreatedTurn> {
     return this.http.post<CreatedTurn>(`${this.apiUrl}/turnos`, {});
+  }
+
+  callNext(id: number): Observable<CallNextResponse> {
+    return this.http.post<CallNextResponse>(`${this.apiUrl}/ventanillas/${id}/llamar`, {});
   }
 
   finishDesk(id: number): Observable<FinishDeskResponse> {

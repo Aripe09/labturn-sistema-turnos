@@ -1,0 +1,23 @@
+<main class="kiosk-shell">
+  <section class="kiosk">
+    <app-brand />
+
+    <div class="kiosk__content">
+      <p class="eyebrow">Atencion organizada, rapida y clara</p>
+      <h1>Bienvenido a LabTurn</h1>
+      <p class="subtitle">Obtén tu turno de atención</p>
+
+      <button mat-flat-button color="primary" class="turn-button" (click)="generarTurno()" [disabled]="loading">
+        <mat-icon>{{ loading ? 'hourglass_top' : 'confirmation_number' }}</mat-icon>
+        GENERAR MI TURNO
+      </button>
+    </div>
+
+    <section class="ticket" *ngIf="turno" [class.ticket--show]="turno">
+      <span>Tu turno</span>
+      <strong>{{ turno }}</strong>
+      <p>{{ detalle }}</p>
+    </section>
+  </section>
+</main>
+

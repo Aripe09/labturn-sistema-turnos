@@ -1,0 +1,39 @@
+<main class="operator-shell">
+  <header class="operator-header">
+    <app-brand />
+    <div>
+      <span>Panel de atencion</span>
+      <strong>{{ state?.cantidad_espera || 0 }} en espera</strong>
+    </div>
+  </header>
+
+  <section class="operator-grid" *ngIf="state">
+    <article class="operator-card" *ngFor="let desk of state.ventanillas; trackBy: trackDesk">
+      <div class="operator-card__top">
+        <div>
+          <span>Mesa</span>
+          <strong>{{ desk.id }}</strong>
+        </div>
+        <p [class.available]="desk.estado === 'disponible'">
+          {{ desk.estado === 'ocupada' ? 'Ocupada' : 'Disponible' }}
+        </p>
+      </div>
+
+      <div class="current-turn">
+        <span>Turno actual</span>
+        <strong>{{ desk.turno_actual || '---' }}</strong>
+      </div>
+
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="finalizar(desk)"
+        [disabled]="!desk.turno_actual || busyDeskId === desk.id"
+      >
+        <mat-icon>done_all</mat-icon>
+        FINALIZAR ATENCIÓN
+      </button>
+    </article>
+  </section>
+</main>
+

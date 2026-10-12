@@ -1,0 +1,40 @@
+<main class="monitor-shell">
+  <header class="monitor-header">
+    <app-brand [light]="true" />
+    <div class="monitor-header__meta">
+      <button mat-stroked-button class="sound-button" (click)="activarSonido()">
+        <mat-icon>{{ soundService.isEnabled ? 'volume_up' : 'notifications_active' }}</mat-icon>
+        {{ soundService.isEnabled ? 'Sonido activo' : 'Activar sonido' }}
+      </button>
+      <time>{{ now | date:'HH:mm:ss' }}</time>
+    </div>
+  </header>
+
+  <section class="summary" *ngIf="state">
+    <div>
+      <span>Turnos en espera</span>
+      <strong>{{ state.cantidad_espera }}</strong>
+    </div>
+    <div>
+      <span>Último turno llamado</span>
+      <strong>{{ state.ultimo_llamado?.turno || '---' }}</strong>
+    </div>
+  </section>
+
+  <section class="desks" *ngIf="state">
+    <article
+      class="desk-card"
+      *ngFor="let desk of state.ventanillas; trackBy: trackDesk"
+      [class.desk-card--active]="announcement?.mesa === desk.id"
+    >
+      <span>{{ desk.nombre | uppercase }}</span>
+      <strong>{{ desk.turno_actual ? 'ATENDIENDO ' + desk.turno_actual : 'DISPONIBLE' }}</strong>
+    </article>
+  </section>
+
+  <section class="announcement" *ngIf="announcement">
+    <span>Nuevo llamado</span>
+    <strong>{{ announcement.mensaje }}</strong>
+  </section>
+</main>
+

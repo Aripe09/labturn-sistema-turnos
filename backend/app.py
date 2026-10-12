@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+from collections import deque
+from copy import deepcopy
+from threading import RLock
+from typing import Any
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+
+app = Flask(__name__)
+CORS(app)
+
+
+class LabTurnState:
+    """In-memory FIFO turn manager for a single-process Flask demo."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self._next_number = 1
+        self._waiting: deque[str] = deque()
+        self._last_called: dict[str, Any] | None = None
+        self._event_counter = 0
+        self._desks = [
+            {"id": 1, "nombre": "Mesa 1", "estado": "disponible", "turno_actual": None},
+            {"id": 2, "nombre": "Mesa 2", "estado": "disponible", "turno_actual": None},
+            {"id": 3, "nombre": "Mesa 3", "estado": "disponible", "turno_actual": None},
+            {"id": 4, "nombre": "Mesa 4", "estado": "disponible", "turno_actual": None},
+        ]
+
+    def reset_for_tests(self) -> None:
+        with self._lock:
+            self.__init__()
+
+    def create_turn(self) -> dict[str, Any]:
+        with self._lock:
+            turn = f"A{self._next_number:03d}"
+            self._next_number += 1
+
+            assigned = self._assign_to_first_available(turn)
+            if assigned is None:
+                self._waiting.append(turn)
+                return {"turno": turn, "estado": "en_espera", "mesa": None}
+
+            return {"turno": turn, "estado": "asignado", "mesa": assigned["mesa"]}
+
+    def finish_desk(self, desk_id: int) -> dict[str, Any] | None:
+        with self._lock:
+            desk = self._find_desk(desk_id)
+            if desk is None:
+                return None
+
+            finished_turn = desk["turno_actual"]
+            desk["turno_actual"] = None
+            desk["estado"] = "disponible"
+
+            next_assignment = None
+            if self._waiting:
+                next_turn = self._waiting.popleft()
+                next_assignment = self._assign_to_desk(desk, next_turn)
+
+            return {
+                "mesa": desk_id,
+                "turno_finalizado": finished_turn,
+                "nueva_asignacion": next_assignment,
+            }
+
+    def state(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "ventanillas": deepcopy(self._desks),
+                "turnos_en_espera": list(self._waiting),
+                "cantidad_espera": len(self._waiting),
+                "ultimo_llamado": deepcopy(self._last_called),
+                "siguiente_turno": f"A{self._next_number:03d}",
+            }
+
+    def desks(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return deepcopy(self._desks)
+
+    def _find_desk(self, desk_id: int) -> dict[str, Any] | None:
+        return next((desk for desk in self._desks if desk["id"] == desk_id), None)
+
+    def _assign_to_first_available(self, turn: str) -> dict[str, Any] | None:
+        desk = next((item for item in self._desks if item["estado"] == "disponible"), None)
+        if desk is None:
+            return None
+        return self._assign_to_desk(desk, turn)
+
+    def _assign_to_desk(self, desk: dict[str, Any], turn: str) -> dict[str, Any]:
+        self._event_counter += 1
+        desk["estado"] = "ocupada"
+        desk["turno_actual"] = turn
+        event = {
+            "id_evento": self._event_counter,
+            "turno": turn,
+            "mesa": desk["id"],
+            "mensaje": f"TURNO {turn} - PASE A MESA {desk['id']}",
+        }
+        self._last_called = event
+        return deepcopy(event)
+
+
+store = LabTurnState()
+
+
+@app.post("/api/turnos")
+def create_turn():
+    return jsonify(store.create_turn()), 201
+
+
+@app.get("/api/estado")
+def get_state():
+    return jsonify(store.state())
+
+
+@app.get("/api/ventanillas")
+def get_desks():
+    return jsonify({"ventanillas": store.desks()})
+
+
+@app.post("/api/ventanillas/<int:desk_id>/finalizar")
+def finish_desk(desk_id: int):
+    result = store.finish_desk(desk_id)
+    if result is None:
+        return jsonify({"error": "Mesa no encontrada"}), 404
+    return jsonify(result)
+
+
+@app.get("/api/health")
+def health():
+    return jsonify({"status": "ok", "service": "LabTurn API"})
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000, debug=False, threaded=True, use_reloader=False)
+
